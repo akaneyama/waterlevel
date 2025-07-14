@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Water Level Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        /* Menambahkan font kustom yang lebih modern */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-200">
+
+    <div class="flex items-center justify-center min-h-screen p-4">
+
+        <div class="w-full max-w-4xl bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-2xl shadow-2xl p-6 md:p-8">
+            
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 text-cyan-400">
+                        <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6.546l-1.058-1.057a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.06 0l2.25-2.25a.75.75 0 1 0-1.06-1.06L12.75 12.546V6Z" clip-rule="evenodd" />
+                    </svg>
+                    <h1 class="text-2xl font-bold text-slate-100">Live Water Level</h1>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="relative flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                    </span>
+                    <span class="text-sm font-medium text-green-400">LIVE</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                
+                <div class="flex justify-center">
+                    <div class="w-48 h-72 bg-slate-900 border-4 border-slate-700 rounded-xl flex items-end overflow-hidden shadow-inner">
+                        <div id="water-level-visual" class="w-full bg-cyan-500 transition-all duration-700 ease-in-out">
+                            <div class="h-4 bg-cyan-400/50 rounded-t-full opacity-50"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center md:items-start gap-4">
+                    <p class="text-lg font-medium text-slate-400">Ketinggian Air Saat Ini</p>
+                    <div class="flex items-baseline gap-2">
+                        <span id="water-level-text" class="text-7xl font-black text-white">-.--</span>
+                        <span class="text-3xl font-bold text-slate-400">cm</span>
+                    </div>
+                    
+                    <p class="text-lg font-medium text-slate-400 mt-4">Kapasitas Terisi</p>
+                    <div class="w-full bg-slate-700 rounded-full h-6 shadow-inner">
+                        <div id="percentage-bar" class="bg-cyan-500 h-6 rounded-full text-center text-white font-bold text-sm transition-all duration-700 ease-in-out flex items-center justify-center">
+                        
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Inisialisasi koneksi Socket.IO ke server
+        const socket = io();
+
+        // Total tinggi wadah dalam cm (WAJIB SESUAIKAN)
+        const TINGGI_WADAH_CM = 13.24; 
+
+        socket.on('connect', function() {
+            console.log('Terhubung ke server!');
+        });
+
+        // Mendengarkan event 'update_data' dari server
+        socket.on('update_data', function(data) {
+            console.log('Data baru diterima:', data);
+            
+            // Ambil elemen dari DOM
+            const levelText = document.getElementById('water-level-text');
+            const visualLevel = document.getElementById('water-level-visual');
+            const percentageBar = document.getElementById('percentage-bar');
+            const percentageText = document.getElementById('percentage-text');
+            
+            // Format data
+            const levelCm = parseFloat(data.level);
+            
+            // Hitung persentase ketinggian air
+            let percentage = (levelCm / TINGGI_WADAH_CM) * 100;
+            // Batasi persentase antara 0 dan 100
+            percentage = Math.max(0, Math.min(100, percentage));
+
+            // Update teks dan visualisasi
+            levelText.innerText = levelCm.toFixed(2);
+            visualLevel.style.height = percentage + '%';
+            percentageBar.style.width = percentage + '%';
+            percentageText.innerText = Math.round(percentage) + '%';
+        });
+    </script>
+</body>
+</html>
